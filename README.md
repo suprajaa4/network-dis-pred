@@ -8,8 +8,6 @@ Network based Disease Gene Prediction
 ## Data
 - STRING PPI (filtered by confidence)
 - DisGeNET disease–gene associations (seed/labels)
-- Optional: GEO/GTEx features
-
 
 ## Pipeline
 1. Download & harmonize IDs
