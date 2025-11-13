@@ -1,13 +1,10 @@
-# End-to-end R pipeline for Alzheimer’s: seeds → STRING API → PPI (named + IDs) → Graph → RWR → Ranking → Metrics
-#
-# What you get when you run this once:
+# pipeline (here,for Alzheimer’s: seeds) → STRING API → PPI (named + IDs) → Graph → RWR → Ranking → Metrics
+
+# Outputs:
 # - data/raw/string_edges_named.tsv        (src, dst, score in 0..1)
 # - data/raw/string_edges_ids.tsv          (stringId_A, stringId_B, score)
 # - results/candidates_top100.csv          (top-ranked genes)
 # - results/metrics.txt                    (AUROC, Recall@50/100)
-#
-# Dependencies (install once):
-# install.packages(c("httr","jsonlite","dplyr","readr","purrr","stringr","igraph","pROC"))
 
 suppressPackageStartupMessages({
   library(httr)
@@ -20,12 +17,12 @@ suppressPackageStartupMessages({
   library(pROC)
 })
 
-# =========================
-# Parameters (tweak here)
-# =========================
+
+# Parameters 
+
 SPECIES <- 9606                      # human
 PARTNER_LIMIT <- 150                 # partners per seed to fetch (higher = bigger network)
-SCORE_THRESHOLD <- 0.7               # keep interactions with score >= this (API scores are 0..1)
+SCORE_THRESHOLD <- 0.7               # keep interactions with score >= this 
 DAMPING <- 0.85                      # PageRank damping (1-restart prob)
 VAL_FRAC <- 0.30                     # fraction of seeds to hold-out for validation
 SEED_FILE <- NULL  # set to NULL to use DEFAULT_SEEDS below
@@ -33,9 +30,9 @@ SEED_FILE <- NULL  # set to NULL to use DEFAULT_SEEDS below
 DEFAULT_SEEDS <- c("APP","PSEN1","PSEN2","APOE","MAPT","TREM2","BIN1","CLU","PICALM","ABCA7",
                    "SORL1","CR1","CD33","PLCG2")
 
-# =========================
+
 # Helpers — STRING API
-# =========================
+
 STRING_BASE <- "https://string-db.org/api"
 
 string_map_symbols <- function(symbols, species = SPECIES) {
@@ -73,13 +70,13 @@ string_small_network <- function(seed_symbols, species = SPECIES,
     stop("Unexpected columns from STRING API. Check API response format.")
   }
   
-  # Named version (human-readable gene symbols)
+  # human-readable gene symbols
   edges_named <- edges_raw %>%
     filter(score >= score_threshold) %>%
     transmute(src = preferredName_A, dst = preferredName_B, score = score) %>%
     distinct() %>% filter(src != dst)
   
-  # ID version (original STRING IDs)
+  # ID string original
   edges_ids <- edges_raw %>%
     filter(score >= score_threshold) %>%
     transmute(stringId_A, stringId_B, score = score) %>%
@@ -88,9 +85,7 @@ string_small_network <- function(seed_symbols, species = SPECIES,
   list(named = edges_named, ids = edges_ids, map = map_df)
 }
 
-# =========================
-# Load seeds
-# =========================
+
 if (!is.null(SEED_FILE) && file.exists(SEED_FILE)) {
   seeds <- read_tsv(SEED_FILE, show_col_types = FALSE)[[1]]
   seeds <- unique(na.omit(seeds))
@@ -111,9 +106,8 @@ write_tsv(ppis$named, "data/raw/string_edges_named.tsv")
 write_tsv(ppis$ids,   "data/raw/string_edges_ids.tsv")
 message("Saved: data/raw/string_edges_named.tsv and data/raw/string_edges_ids.tsv")
 
-# =========================
-# Build graph (named) and compute features
-# =========================
+# graph (named) 
+
 edges <- ppis$named %>% rename(combined_score = score)
 G <- graph_from_data_frame(edges %>% select(src, dst), directed = FALSE)
 G <- simplify(G, remove.multiple = TRUE, remove.loops = TRUE)
@@ -123,7 +117,7 @@ comp <- components(G)
 G <- induced_subgraph(G, which(comp$membership == which.max(comp$csize)))
 V(G)$name <- make.names(V(G)$name, unique = TRUE)
 
-# Intersect seeds with present nodes
+
 seed_genes <- intersect(seeds, V(G)$name)
 if (length(seed_genes) < 3) stop("<3 seeds present in graph after filtering; try lowering SCORE_THRESHOLD or raising PARTNER_LIMIT.")
 
@@ -137,9 +131,7 @@ feat <- tibble(
 pr <- page_rank(G, directed = FALSE, damping = DAMPING)$vector
 feat$pagerank <- pr[feat$gene]
 
-# =========================
-# Personalized PageRank (RWR) with hold-out validation
-# =========================
+
 set.seed(7)
 val_n <- max(1, floor(length(seed_genes) * VAL_FRAC))
 val_seeds <- sample(seed_genes, val_n)
@@ -150,17 +142,12 @@ pers[train_seeds] <- 1/length(train_seeds)
 pr_personal <- page_rank(G, directed = FALSE, damping = DAMPING, personalized = pers)$vector
 feat$rwr <- pr_personal[feat$gene]
 
-# =========================
-# Aggregate into a single score (rank → z → sum)
-# =========================
 num_cols <- c("degree","betweenness","closeness","pagerank","rwr")
 rank_mat <- apply(as.matrix(feat[, num_cols]), 2, function(x) rank(x, ties.method = "average"))
 z_mat <- scale(rank_mat)
 feat$score <- rowSums(z_mat)
 
-# =========================
-# Validation metrics
-# =========================
+#validate
 labels <- ifelse(feat$gene %in% val_seeds, 1, 0)
 roc_obj <- tryCatch(roc(response = labels, predictor = feat$score, quiet = TRUE), error = function(e) NULL)
 auroc <- if (!is.null(roc_obj)) as.numeric(auc(roc_obj)) else NA_real_
@@ -173,9 +160,7 @@ recall_at_k <- function(k) {
 recall50  <- recall_at_k(min(50, nrow(ranked)))
 recall100 <- recall_at_k(min(100, nrow(ranked)))
 
-# =========================
-# Save outputs
-# =========================
+
 if (!dir.exists("results")) dir.create("results", recursive = TRUE)
 write_csv(ranked %>% select(gene, score) %>% head(100), "results/candidates_top100.csv")
 write_lines(sprintf("AUROC=%.4f\nRecall@50=%.4f\nRecall@100=%.4f", auroc, recall50, recall100), "results/metrics.txt")
@@ -183,10 +168,4 @@ write_lines(sprintf("AUROC=%.4f\nRecall@50=%.4f\nRecall@100=%.4f", auroc, recall
 cat(sprintf("\nSaved results -> results/candidates_top100.csv and results/metrics.txt\nAUROC: %s\nRecall@50: %.3f | Recall@100: %.3f\n\n",
             ifelse(is.na(auroc), "NA", sprintf("%.3f", auroc)), recall50, recall100))
 
-# =========================
-# Tips
-# =========================
-# - If AUROC is NA or very low, increase PARTNER_LIMIT or lower SCORE_THRESHOLD (e.g., 0.6) to include more edges.
-# - If seeds drop out, ensure seed symbols match STRING preferred names; consider adding synonyms to DEFAULT_SEEDS.
-# - For larger graphs, consider approximate betweenness or skip it for speed.
-# - To add expression features later, join a data.frame with columns gene + logFC (or |logFC|) to `feat` before aggregation.
+
