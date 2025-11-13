@@ -26,14 +26,16 @@ Output includes a ranked list of top 100 candidate genes and validation metrics.
 
 ---
 
-##  Project Structure
+##  Data
 
-network-dis-pred/
-├─ R/ # Modular pipeline functions
-├─ scripts/ # CLI runner
-├─ data/ # Automatically populated
-├─ results/ # Outputs
-└─ README.md
+This project uses publicly available biological resources.
+
+STRING Database
+Szklarczyk et al. (2023). STRING v12: protein–protein association networks.
+
+DisGeNET
+Piñero et al. (2020). The DisGeNET knowledge platform for disease genomics.
+
 ##  Example: Alzheimer’s Disease
 
 Default seeds (APP, PSEN1, APOE, MAPT…) are bundled.  
