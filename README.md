@@ -36,10 +36,7 @@ Szklarczyk et al. (2023). STRING v12: protein–protein association networks.
 DisGeNET
 Piñero et al. (2020). The DisGeNET knowledge platform for disease genomics.
 
-##  Example: Alzheimer’s Disease
 
-Default seeds (APP, PSEN1, APOE, MAPT…) are bundled.  
-You can supply any disease-gene list (e.g., DisGeNET).
 
 ---
 
@@ -66,8 +63,12 @@ conda activate ppi-rank
 jupyter lab
 
 ```
+##  Example: Alzheimer’s Disease
 
-Example Results (Alzheimer’s disease)
+Default seeds (APP, PSEN1, APOE, MAPT…) are bundled.  
+You can supply any disease-gene list (e.g., DisGeNET).
+
+# Results:
 
 Using a set of well-established Alzheimer’s genes as seeds, the STRING-based PPI network and RWR-derived features achieve:
 
