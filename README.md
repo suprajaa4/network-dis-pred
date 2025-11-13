@@ -1,21 +1,61 @@
-# network-dis-pred
-Network based Disease Gene Prediction
+# Network-Based Disease Gene Prediction
 
+Predict disease-associated genes using protein–protein interaction (PPI) networks, random-walk proximity, and graph-topological features.  
+This pipeline ranks candidate genes for any disease given a seed set of known associated genes.
 
- Rank candidate genes for a chosen disease by leveraging PPI topology, random-walk proximity, and node embeddings, with validation against known disease genes.
+---
 
+## Overview
 
-## Data
-- STRING PPI (filtered by confidence)
-- DisGeNET disease–gene associations (seed/labels)
+This project implements a complete pipeline for network-based disease gene discovery:
 
-## Pipeline
-1. Download & harmonize IDs
-2. Build induced disease subgraph
-3. Compute features (centralities, RWR, embeddings)
-4. Aggregate ranks and score candidates
-5. Validate with held-out positives (AUROC/AUPRC)
+1. **Fetch PPI network** from STRING for seed genes  
+2. **Build induced graph** (largest connected component)  
+3. **Compute node features**  
+   - degree  
+   - betweenness  
+   - closeness  
+   - PageRank  
+   - random-walk with restart (RWR) using seeds  
+4. **Rank all genes** via z-score aggregation  
+5. **Validate** via held-out seeds  
+   - AUROC  
+   - Recall@50 / Recall@100  
 
+Output includes a ranked list of top 100 candidate genes and validation metrics.
+
+---
+
+##  Project Structure
+
+network-dis-pred/
+├─ R/ # Modular pipeline functions
+├─ scripts/ # CLI runner
+├─ data/ # Automatically populated
+├─ results/ # Outputs
+└─ README.md
+##  Example: Alzheimer’s Disease
+
+Default seeds (APP, PSEN1, APOE, MAPT…) are bundled.  
+You can supply any disease-gene list (e.g., DisGeNET).
+
+---
+
+## Installation
+
+Requires R ≥ 4.2.
+
+Install required packages:
+
+```r
+install.packages(c(
+  "httr","jsonlite","dplyr","readr","purrr",
+  "stringr","igraph","pROC","optparse"
+))
+Optional (recommended):
+
+install.packages("renv")
+renv::restore()
 
 ## How to run
 ```bash
