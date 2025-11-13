@@ -5,7 +5,7 @@ This pipeline ranks candidate genes for any disease given a seed set of known as
 
 ---
 
-## 🚀 Overview
+## Overview
 
 This project implements a complete pipeline for network-based disease gene discovery:
 
@@ -26,7 +26,7 @@ Output includes a ranked list of top 100 candidate genes and validation metrics.
 
 ---
 
-## 📂 Project Structure
+##  Project Structure
 
 network-dis-pred/
 ├─ R/ # Modular pipeline functions
@@ -34,14 +34,14 @@ network-dis-pred/
 ├─ data/ # Automatically populated
 ├─ results/ # Outputs
 └─ README.md
-## 🧬 Example: Alzheimer’s Disease
+##  Example: Alzheimer’s Disease
 
 Default seeds (APP, PSEN1, APOE, MAPT…) are bundled.  
 You can supply any disease-gene list (e.g., DisGeNET).
 
 ---
 
-## 🔧 Installation
+## Installation
 
 Requires R ≥ 4.2.
 
@@ -53,8 +53,6 @@ install.packages(c(
   "stringr","igraph","pROC","optparse"
 ))
 Optional (recommended):
-
-```r
 
 install.packages("renv")
 renv::restore()
