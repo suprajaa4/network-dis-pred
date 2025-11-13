@@ -64,3 +64,10 @@ renv::restore()
 conda env create -f env/environment.yml
 conda activate ppi-rank
 jupyter lab
+
+
+
+
+Please reach out for any collaborations or feedback:
+Suprajaa V
+suprajaav4@gmail.com
